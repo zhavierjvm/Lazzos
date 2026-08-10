@@ -20,6 +20,32 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Lazzos necesita tu ubicación para mostrarte eventos y personas cercanas en el mapa."
+        }
+      ],
+      [
+        "@config-plugins/react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "Lazzos necesita acceso a Bluetooth para encontrar personas cerca tuyo incluso si la app está en segundo plano."
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "sk.YOUR_MAPBOX_SECRET",
+          "RNMapboxMapsImpl": "mapbox"
+        }
+      ]
+    ]
   }
 }

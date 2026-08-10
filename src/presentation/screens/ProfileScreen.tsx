@@ -16,10 +16,19 @@ const CATEGORIES: IntentionCategory[] = [
 ];
 
 export const ProfileScreen = () => {
-  const [isGhostMode, setIsGhostMode] = useState(false);
-  const [bio, setBio] = useState('');
-  const [selectedIntentions, setSelectedIntentions] = useState<IntentionCategory[]>([]);
+  const userProfile = useAuthStore(state => state.userProfile);
+  const setGhostMode = useAuthStore(state => state.setGhostMode);
+
+  const [isGhostMode, setIsGhostMode] = useState(userProfile?.isGhostMode || false);
+  const [bio, setBio] = useState(userProfile?.shortBio || '');
+  const [selectedIntentions, setSelectedIntentions] = useState<IntentionCategory[]>(userProfile?.intentions || []);
   const signOut = useAuthStore(state => state.signOut);
+
+  const handleGhostModeToggle = (value: boolean) => {
+    setIsGhostMode(value);
+    setGhostMode(value);
+    // Note: When backend is hooked up, also update the DB here
+  };
 
   const toggleIntention = (intention: IntentionCategory) => {
     setSelectedIntentions(prev =>
@@ -52,7 +61,7 @@ export const ProfileScreen = () => {
           <Switch
             trackColor={{ false: colors.glassBorder, true: colors.primary }}
             thumbColor={isGhostMode ? colors.background : colors.textSecondary}
-            onValueChange={setIsGhostMode}
+            onValueChange={handleGhostModeToggle}
             value={isGhostMode}
           />
         </View>

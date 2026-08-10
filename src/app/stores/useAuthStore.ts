@@ -10,6 +10,7 @@ interface AuthState {
   setUserProfile: (profile: User | null) => void;
   setLoading: (loading: boolean) => void;
   signOut: () => void;
+  setGhostMode: (isGhostMode: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -20,4 +21,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUserProfile: (profile) => set({ userProfile: profile }),
   setLoading: (loading) => set({ isLoading: loading }),
   signOut: () => set({ session: null, userProfile: null }),
+  setGhostMode: (isGhostMode) => set((state) => ({
+    userProfile: state.userProfile ? { ...state.userProfile, isGhostMode } : null
+  })),
 }));
