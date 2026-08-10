@@ -2,10 +2,11 @@ import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { colors } from '../../core/theme';
+import { StyleProp } from 'react-native';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const GlassCard: React.FC<GlassCardProps> = ({ children, style }) => {

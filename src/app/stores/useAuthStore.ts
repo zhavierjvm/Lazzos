@@ -11,6 +11,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   signOut: () => void;
   setGhostMode: (isGhostMode: boolean) => void;
+  setPremiumStatus: (isPremium: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -23,5 +24,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: () => set({ session: null, userProfile: null }),
   setGhostMode: (isGhostMode) => set((state) => ({
     userProfile: state.userProfile ? { ...state.userProfile, isGhostMode } : null
+  })),
+  setPremiumStatus: (isPremium) => set((state) => ({
+    userProfile: state.userProfile ? { ...state.userProfile, isPremium } : null
   })),
 }));

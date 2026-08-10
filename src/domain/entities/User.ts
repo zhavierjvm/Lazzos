@@ -11,6 +11,13 @@ export interface SocialLinks {
   whatsapp?: string;
 }
 
+export interface CatalogItem {
+  id: string;
+  title: string;
+  price: string;
+  imageUrl?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -20,6 +27,8 @@ export interface User {
   socialLinks?: SocialLinks;
   intentions: IntentionCategory[];
   isGhostMode: boolean;
+  isPremium: boolean;
+  catalogItems?: CatalogItem[];
   createdAt: Date;
   updatedAt: Date;
 }
