@@ -1,13 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { colors } from '../../../core/theme';
 import { GlassCard } from '../../components/GlassCard';
+import { supabase } from '../../../infrastructure/backend/supabase';
 
 export const ChatScreen = ({ navigation }: any) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     { id: '1', text: 'Hola! Vi tu perfil en el Radar.', isMe: false, time: '10:42 AM' },
   ]);
+
+  // Realtime Supabase Subscription for Chat
+  useEffect(() => {
+    const channel = supabase
+      .channel('chat_room_1')
+      .on('broadcast', { event: 'new_message' }, (payload) => {
+        setMessages(prev => [
+          ...prev,
+          { id: Date.now().toString(), text: payload.payload.text, isMe: false, time: 'Ahora' }
+        ]);
+      })
+      .subscribe();
+
+    // For MVP demonstration if backend is empty, we simulate a received broadcast after 5s
+    const timer = setTimeout(() => {
+      channel.send({
+        type: 'broadcast',
+        event: 'new_message',
+        payload: { text: '¿Qué tal? Yo también estoy en el café.' },
+      });
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleSend = () => {
     if (!message.trim()) return;

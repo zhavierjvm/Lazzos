@@ -29,6 +29,7 @@ export interface User {
   isGhostMode: boolean;
   isPremium: boolean;
   catalogItems?: CatalogItem[];
+  blockedUsers?: string[]; // Array of blocked user IDs
   createdAt: Date;
   updatedAt: Date;
 }

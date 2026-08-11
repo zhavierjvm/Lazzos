@@ -6,6 +6,7 @@ import { IntentionFilterBar } from '../components/radar/IntentionFilterBar';
 import { useRadarStore } from '../../app/stores/useRadarStore';
 import { User, CatalogItem } from '../../domain/entities/User';
 import { Button } from '../components/ui/Button';
+import { GlassSkeleton } from '../components/ui/GlassSkeleton';
 
 // Mock data for the feed
 const MOCK_PITCHES: User[] = [
@@ -58,6 +59,12 @@ const MOCK_PITCHES: User[] = [
 
 export const ShowcaseScreen = () => {
   const { selectedFilter } = useRadarStore();
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [selectedFilter]);
 
   const filteredPitches = useMemo(() => {
     if (selectedFilter === 'Todos') return MOCK_PITCHES;
@@ -112,13 +119,20 @@ export const ShowcaseScreen = () => {
         <IntentionFilterBar />
       </View>
 
-      <FlatList
-        data={filteredPitches}
-        keyExtractor={item => item.id}
-        renderItem={renderPitchCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.listContent}>
+          <GlassSkeleton style={{ height: 200, width: '100%', marginBottom: 16 }} />
+          <GlassSkeleton style={{ height: 200, width: '100%' }} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredPitches}
+          keyExtractor={item => item.id}
+          renderItem={renderPitchCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 };

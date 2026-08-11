@@ -49,14 +49,34 @@ export const UserPreviewModal: React.FC<UserPreviewModalProps> = ({ user, visibl
           </View>
 
           <View style={styles.socialContainer}>
-            {user.socialLinks?.instagram && (
-              <Button title="Instagram" variant="outline" onPress={() => {}} style={styles.socialBtn} />
-            )}
-            {user.socialLinks?.linkedin && (
-              <Button title="LinkedIn" variant="outline" onPress={() => {}} style={styles.socialBtn} />
-            )}
+            <View style={styles.socialRow}>
+              {user.socialLinks?.instagram && (
+                <Button title="Instagram" variant="outline" onPress={() => {}} style={[styles.socialBtn, { flex: 1 }]} />
+              )}
+              {user.socialLinks?.linkedin && (
+                <Button title="LinkedIn" variant="outline" onPress={() => {}} style={[styles.socialBtn, { flex: 1 }]} />
+              )}
+            </View>
             {/* Paywall locked feature button */}
             <Button title="Chat In-App (Pro)" variant="primary" onPress={() => {}} style={styles.chatBtn} />
+
+            <Button
+              title="🚫 Bloquear / Reportar"
+              variant="outline"
+              onPress={async () => {
+                const { supabase } = await import('../../../infrastructure/backend/supabase');
+                // Simulate Supabase RPC or DB update to add to blocked users
+                supabase.channel('radar_updates').send({
+                  type: 'broadcast',
+                  event: 'user_blocked',
+                  payload: { blockedUserId: user.id }
+                });
+                alert('Usuario bloqueado y oculto de forma anónima.');
+                onClose();
+              }}
+              style={styles.blockBtn}
+              textStyle={styles.blockBtnText}
+            />
           </View>
         </GlassCard>
       </View>
@@ -126,11 +146,23 @@ const styles = StyleSheet.create({
   socialContainer: {
     gap: 8,
   },
+  socialRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   socialBtn: {
     paddingVertical: 10,
   },
   chatBtn: {
     marginTop: 8,
     backgroundColor: colors.accent,
+  },
+  blockBtn: {
+    marginTop: 16,
+    borderColor: 'red',
+  },
+  blockBtnText: {
+    color: 'red',
+    fontSize: 12,
   }
 });

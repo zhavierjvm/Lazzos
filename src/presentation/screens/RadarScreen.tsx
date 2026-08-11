@@ -7,43 +7,83 @@ import { BLEProximityService } from '../../infrastructure/ble/BLEProximityServic
 import { ProximityRangeSelector } from '../components/radar/ProximityRangeSelector';
 import { IntentionFilterBar } from '../components/radar/IntentionFilterBar';
 import { UserPreviewModal } from '../components/radar/UserPreviewModal';
+import { Button } from '../components/ui/Button';
+import { GlassCard } from '../components/GlassCard';
 import { User } from '../../domain/entities/User';
+import * as Linking from 'expo-linking';
+import { supabase } from '../../infrastructure/backend/supabase';
 
 export const RadarScreen = () => {
-  const { isMapView, setMapView } = useRadarStore();
+  const { isMapView, setMapView, isDevMockMode } = useRadarStore();
   const hasPermissions = useProximityPermissions();
   const [detectedUsers, setDetectedUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+  // Track notified users to prevent spam
+  const notifiedUsers = React.useRef(new Set<string>());
+
   useEffect(() => {
+    // Supabase Realtime channel for Radar updates (Ghost Mode and Blocks)
+    const channel = supabase.channel('radar_updates')
+      .on('broadcast', { event: 'user_blocked' }, (payload) => {
+        setDetectedUsers(prev => prev.filter(u => u.id !== payload.payload.blockedUserId));
+        if (selectedUser?.id === payload.payload.blockedUserId) setSelectedUser(null);
+      })
+      .on('broadcast', { event: 'ghost_mode_changed' }, (payload) => {
+        if (payload.payload.isGhostMode) {
+           setDetectedUsers(prev => prev.filter(u => u.id !== payload.payload.userId));
+           if (selectedUser?.id === payload.payload.userId) setSelectedUser(null);
+        }
+      })
+      .subscribe();
+
     BLEProximityService.initialize();
 
     if (hasPermissions) {
-      // Mocked data insertion for MVP UI purposes since actual BLE devices aren't present
-      setDetectedUsers([
-        {
-          id: '1',
-          email: 'test@lazzos.app',
-          fullName: 'María González',
-          shortBio: 'Diseñadora gráfica freelance. Tomando un café.',
-          intentions: ['Negocios/Servicios'],
-          socialLinks: { instagram: '@maru_dg' },
-          isGhostMode: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } as User
-      ]);
+      if (isDevMockMode) {
+        // Generate mock users for testing
+        setDetectedUsers([
+          {
+            id: '1',
+            email: 'test@lazzos.app',
+            fullName: 'María González',
+            shortBio: 'Diseñadora gráfica freelance. Tomando un café.',
+            intentions: ['Negocios/Servicios'],
+            socialLinks: { instagram: '@maru_dg' },
+            isGhostMode: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          } as User,
+          {
+            id: '2',
+            email: 'dev@lazzos.app',
+            fullName: 'Lucas Dev',
+            shortBio: 'Desarrollador buscando cofounder.',
+            intentions: ['Amigos'],
+            isGhostMode: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          } as User
+        ]);
+      } else {
+        setDetectedUsers([]); // Clear when dev mode is off
+      }
 
       BLEProximityService.startScanning((device) => {
-        // Logic to update detected users state
-        // console.log("Found device:", device);
+        // Debounce/deduplicate notifications for same user
+        const deviceId = device.id || 'unknown';
+        if (!notifiedUsers.current.has(deviceId)) {
+          notifiedUsers.current.add(deviceId);
+          BLEProximityService.notifyMatch('Nuevo perfil encontrado', 'Alguien coincide con tus intenciones cerca.');
+        }
       });
     }
 
     return () => {
       BLEProximityService.stopScanning();
+      supabase.removeChannel(channel);
     };
-  }, [hasPermissions]);
+  }, [hasPermissions, isDevMockMode, selectedUser]);
 
   return (
     <View style={styles.container}>
@@ -64,6 +104,19 @@ export const RadarScreen = () => {
       <IntentionFilterBar />
       <ProximityRangeSelector />
 
+      {/* Permissions Error Handling */}
+      {!hasPermissions && (
+        <GlassCard style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Radar Desactivado</Text>
+          <Text style={styles.errorSub}>Lazzos necesita permisos de Bluetooth y Ubicación para encontrar a las personas a tu alrededor.</Text>
+          <Button
+            title="Activar Permisos"
+            onPress={() => Linking.openSettings()}
+            style={styles.errorBtn}
+          />
+        </GlassCard>
+      )}
+
       {/* Main View Area */}
       <View style={styles.viewArea}>
         {isMapView ? (
@@ -81,15 +134,20 @@ export const RadarScreen = () => {
             </View>
 
             {/* Render detected users (Mocked position) */}
-            {detectedUsers.map((user, i) => (
-              <TouchableOpacity
-                key={user.id}
-                style={[styles.userNode, { top: '30%', left: '60%' }]}
-                onPress={() => setSelectedUser(user)}
-              >
-                <View style={styles.userAvatar} />
-              </TouchableOpacity>
-            ))}
+            {detectedUsers.map((user, i) => {
+              // Simple randomish scatter for mock mode visual
+              const top = i % 2 === 0 ? '30%' : '70%';
+              const left = i % 2 === 0 ? '60%' : '25%';
+              return (
+                <TouchableOpacity
+                  key={user.id}
+                  style={[styles.userNode, { top, left }]}
+                  onPress={() => setSelectedUser(user)}
+                >
+                  <View style={styles.userAvatar} />
+                </TouchableOpacity>
+              )
+            })}
           </View>
         )}
       </View>
@@ -193,5 +251,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderWidth: 2,
     borderColor: colors.primary,
+  },
+  errorCard: {
+    margin: 16,
+    borderColor: 'red',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorTitle: {
+    color: 'red',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  errorSub: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  errorBtn: {
+    backgroundColor: 'red',
+    paddingHorizontal: 24,
   }
 });

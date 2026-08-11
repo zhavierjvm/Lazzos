@@ -7,6 +7,8 @@ import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../../app/stores/useAuthStore';
 import { IntentionCategory } from '../../domain/entities/User';
 import { AuthService } from '../../infrastructure/backend/AuthService';
+import { useRadarStore } from '../../app/stores/useRadarStore';
+import { supabase } from '../../infrastructure/backend/supabase';
 
 const CATEGORIES: IntentionCategory[] = [
   'Negocios/Servicios',
@@ -23,11 +25,18 @@ export const ProfileScreen = () => {
   const [bio, setBio] = useState(userProfile?.shortBio || '');
   const [selectedIntentions, setSelectedIntentions] = useState<IntentionCategory[]>(userProfile?.intentions || []);
   const signOut = useAuthStore(state => state.signOut);
+  const { isDevMockMode, setDevMockMode } = useRadarStore();
 
   const handleGhostModeToggle = (value: boolean) => {
     setIsGhostMode(value);
     setGhostMode(value);
-    // Note: When backend is hooked up, also update the DB here
+
+    // Realtime Ghost Mode broadcast
+    supabase.channel('radar_updates').send({
+      type: 'broadcast',
+      event: 'ghost_mode_changed',
+      payload: { userId: userProfile?.id, isGhostMode: value }
+    });
   };
 
   const toggleIntention = (intention: IntentionCategory) => {
@@ -114,6 +123,21 @@ export const ProfileScreen = () => {
         <Text style={styles.label}>Redes Sociales</Text>
         <Input placeholder="Instagram (Ej. @usuario)" />
         <Input placeholder="LinkedIn URL" />
+      </GlassCard>
+
+      <GlassCard style={styles.devCard}>
+        <View style={styles.ghostRow}>
+          <View>
+            <Text style={[styles.ghostTitle, {color: colors.accent}]}>Dev Mock Mode</Text>
+            <Text style={styles.ghostSub}>Generar usuarios simulados en Radar</Text>
+          </View>
+          <Switch
+            trackColor={{ false: colors.glassBorder, true: colors.accent }}
+            thumbColor={isDevMockMode ? colors.background : colors.textSecondary}
+            onValueChange={setDevMockMode}
+            value={isDevMockMode}
+          />
+        </View>
       </GlassCard>
 
       <Button
@@ -236,5 +260,10 @@ const styles = StyleSheet.create({
   logoutBtn: {
     marginTop: 32,
     borderColor: 'red',
+  },
+  devCard: {
+    marginTop: 24,
+    borderColor: colors.accent,
+    borderWidth: 1,
   }
 });

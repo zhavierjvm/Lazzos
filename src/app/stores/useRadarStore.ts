@@ -12,6 +12,8 @@ interface RadarState {
   setFuzzyLocation: (isFuzzy: boolean) => void;
   setSelectedFilter: (filter: IntentionCategory | 'Todos') => void;
   setMapView: (isMap: boolean) => void;
+  isDevMockMode: boolean;
+  setDevMockMode: (isMock: boolean) => void;
 }
 
 export const useRadarStore = create<RadarState>((set) => ({
@@ -23,4 +25,6 @@ export const useRadarStore = create<RadarState>((set) => ({
   setFuzzyLocation: (isFuzzyLocation) => set({ isFuzzyLocation }),
   setSelectedFilter: (selectedFilter) => set({ selectedFilter }),
   setMapView: (isMapView) => set({ isMapView }),
+  isDevMockMode: false,
+  setDevMockMode: (isDevMockMode) => set({ isDevMockMode }),
 }));
